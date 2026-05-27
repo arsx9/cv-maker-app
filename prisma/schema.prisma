@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Resume {
+  id         String   @id @default(cuid())
+  title      String
+  templateKey String  @default("classic")
+  data       Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  coverLetters CoverLetter[]
+}
+
+model CoverLetter {
+  id             String   @id @default(cuid())
+  title          String
+  linkedResumeId String?
+  data           Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  linkedResume Resume? @relation(fields: [linkedResumeId], references: [id], onDelete: SetNull)
+
+  @@index([linkedResumeId])
+}
