@@ -46,7 +46,13 @@ export const api = {
   createResume() {
     return request<ResumeRecord>('/resumes', { method: 'POST' })
   },
-  updateResume(id: string, payload: Pick<ResumeRecord, 'title' | 'data' | 'templateKey'>) {
+  duplicateResume(id: string) {
+    return request<ResumeRecord>(`/resumes/${id}/duplicate`, { method: 'POST' })
+  },
+  updateResume(
+    id: string,
+    payload: Pick<ResumeRecord, 'title' | 'data' | 'templateKey' | 'tags'>,
+  ) {
     return request<ResumeRecord>(`/resumes/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -66,7 +72,7 @@ export const api = {
   },
   updateCoverLetter(
     id: string,
-    payload: Pick<CoverLetterRecord, 'title' | 'data' | 'linkedResumeId'>,
+    payload: Pick<CoverLetterRecord, 'title' | 'data' | 'linkedResumeId' | 'tags'>,
   ) {
     return request<CoverLetterRecord>(`/cover-letters/${id}`, {
       method: 'PUT',

@@ -78,6 +78,7 @@ export type ResumeRecord = {
   id: string
   title: string
   templateKey: string
+  tags: string[]
   data: ResumeData
   createdAt: string
   updatedAt: string
@@ -85,7 +86,7 @@ export type ResumeRecord = {
 
 export type ResumeListItem = Pick<
   ResumeRecord,
-  'id' | 'title' | 'templateKey' | 'updatedAt'
+  'id' | 'title' | 'templateKey' | 'tags' | 'updatedAt'
 >
 
 export type CoverLetterData = {
@@ -110,6 +111,7 @@ export type CoverLetterData = {
 export type CoverLetterRecord = {
   id: string
   title: string
+  tags: string[]
   linkedResumeId: string | null
   data: CoverLetterData
   createdAt: string
@@ -118,7 +120,7 @@ export type CoverLetterRecord = {
 
 export type CoverLetterListItem = Pick<
   CoverLetterRecord,
-  'id' | 'title' | 'linkedResumeId' | 'updatedAt'
+  'id' | 'title' | 'tags' | 'linkedResumeId' | 'updatedAt'
 >
 
 export const resumeSectionOptions: Array<{

@@ -130,11 +130,13 @@ const coverLetterDataSchema = z.object({
 const resumeUpdateSchema = z.object({
   title: z.string().min(1),
   templateKey: z.string().min(1),
+  tags: z.array(z.string()),
   data: resumeDataSchema,
 })
 
 const coverLetterUpdateSchema = z.object({
   title: z.string().min(1),
+  tags: z.array(z.string()),
   linkedResumeId: z.string().nullable(),
   data: coverLetterDataSchema,
 })
@@ -171,6 +173,7 @@ app.get('/api/resumes', async (_request, response, next) => {
         id: resume.id,
         title: resume.title,
         templateKey: resume.templateKey,
+        tags: normalizeResumeTags(resume.tags),
         updatedAt: resume.updatedAt.toISOString(),
       })),
     )
@@ -211,6 +214,33 @@ app.get('/api/resumes/:id', async (request, response, next) => {
   }
 })
 
+app.post('/api/resumes/:id/duplicate', async (request, response, next) => {
+  try {
+    const source = await prisma.resume.findUnique({
+      where: { id: request.params.id },
+    })
+
+    if (!source) {
+      throw createNotFound('Resume not found.')
+    }
+
+    const resume = await prisma.resume.create({
+      data: {
+        title: `${source.title} (Copy)`,
+        templateKey: source.templateKey,
+        tags: normalizeResumeTags(source.tags),
+        data: structuredClone(
+          normalizeResumeData(resumeDataSchema.parse(source.data)),
+        ),
+      },
+    })
+
+    response.status(201).json(serializeResume(resume))
+  } catch (error) {
+    next(error)
+  }
+})
+
 app.put('/api/resumes/:id', async (request, response, next) => {
   try {
     const payload = resumeUpdateSchema.parse(request.body)
@@ -219,6 +249,7 @@ app.put('/api/resumes/:id', async (request, response, next) => {
       data: {
         title: payload.title,
         templateKey: payload.templateKey,
+        tags: normalizeResumeTags(payload.tags),
         data: normalizeResumeData(payload.data),
       },
     })
@@ -282,6 +313,7 @@ app.get('/api/cover-letters', async (_request, response, next) => {
       coverLetters.map((coverLetter) => ({
         id: coverLetter.id,
         title: coverLetter.title,
+        tags: normalizeResumeTags(coverLetter.tags),
         linkedResumeId: coverLetter.linkedResumeId,
         updatedAt: coverLetter.updatedAt.toISOString(),
       })),
@@ -329,7 +361,9 @@ app.put('/api/cover-letters/:id', async (request, response, next) => {
     const coverLetter = await prisma.coverLetter.update({
       where: { id: request.params.id },
       data: {
-        ...payload,
+        title: payload.title,
+        tags: normalizeResumeTags(payload.tags),
+        linkedResumeId: payload.linkedResumeId,
         data: normalizeCoverLetterData(payload.data),
       },
     })
@@ -555,10 +589,19 @@ function buildDocumentHtml(
   )}`
 }
 
+function normalizeResumeTags(tags: unknown) {
+  if (!Array.isArray(tags)) {
+    return []
+  }
+
+  return [...new Set(tags.map((tag) => String(tag).trim()).filter(Boolean))]
+}
+
 function serializeResume(resume: {
   id: string
   title: string
   templateKey: string
+  tags?: unknown
   data: unknown
   createdAt: Date
   updatedAt: Date
@@ -567,6 +610,7 @@ function serializeResume(resume: {
     id: resume.id,
     title: resume.title,
     templateKey: resume.templateKey,
+    tags: normalizeResumeTags(resume.tags),
     data: normalizeResumeData(resumeDataSchema.parse(resume.data)),
     createdAt: resume.createdAt.toISOString(),
     updatedAt: resume.updatedAt.toISOString(),
@@ -576,6 +620,7 @@ function serializeResume(resume: {
 function serializeCoverLetter(coverLetter: {
   id: string
   title: string
+  tags?: unknown
   linkedResumeId: string | null
   data: unknown
   createdAt: Date
@@ -584,6 +629,7 @@ function serializeCoverLetter(coverLetter: {
   return {
     id: coverLetter.id,
     title: coverLetter.title,
+    tags: normalizeResumeTags(coverLetter.tags),
     linkedResumeId: coverLetter.linkedResumeId,
     data: normalizeCoverLetterData(coverLetterDataSchema.parse(coverLetter.data)),
     createdAt: coverLetter.createdAt.toISOString(),

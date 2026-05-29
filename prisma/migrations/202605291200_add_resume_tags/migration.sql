@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Resume" ADD COLUMN "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

@@ -12,6 +12,7 @@ import type {
   ResumeListItem,
 } from '../../lib/documents'
 import { DocumentStyleEditor } from '../shared/DocumentStyleEditor'
+import { TagInputEditor } from '../shared/TagInputEditor'
 import { ClassicCoverLetterPreview } from '../../templates/classicCv/ClassicCoverLetterPreview'
 
 export function CoverLetterEditorPage() {
@@ -41,8 +42,16 @@ export function CoverLetterEditorPage() {
         ])
 
         if (!ignore) {
-          setCoverLetter(nextLetter)
-          setResumes(nextResumes)
+          setCoverLetter({
+            ...nextLetter,
+            tags: nextLetter.tags ?? [],
+          })
+          setResumes(
+            nextResumes.map((resume) => ({
+              ...resume,
+              tags: resume.tags ?? [],
+            })),
+          )
           setError(null)
         }
       } catch (loadError) {
@@ -101,6 +110,7 @@ export function CoverLetterEditorPage() {
       setIsSaving(true)
       const savedLetter = await api.updateCoverLetter(coverLetter.id, {
         title: coverLetter.title,
+        tags: coverLetter.tags,
         linkedResumeId: coverLetter.linkedResumeId,
         data: coverLetter.data,
       })
@@ -247,6 +257,20 @@ export function CoverLetterEditorPage() {
                 </select>
               </label>
             </div>
+
+            <TagInputEditor
+              label="Cover Letter Tags"
+              placeholder="e.g. Primary, WordPress, Remote"
+              tags={coverLetter.tags}
+              onChange={(tags) => {
+                setCoverLetter({ ...coverLetter, tags })
+                setStatus(null)
+              }}
+            />
+            <p className="editor-copy">
+              Use tags to organize saved cover letters in your library. Tags are not
+              included on the exported PDF.
+            </p>
           </section>
 
           <DocumentStyleEditor

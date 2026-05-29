@@ -27,6 +27,14 @@ import { resumeSectionOptions } from '../../lib/documents'
 import { DocumentStyleEditor } from '../shared/DocumentStyleEditor'
 import { TagInputEditor } from '../shared/TagInputEditor'
 import { ClassicCvPreview } from '../../templates/classicCv/ClassicCvPreview'
+import { IconButton } from '../shared/IconButton'
+import {
+  ArrowLeftIcon,
+  CopyIcon,
+  DownloadIcon,
+  SaveIcon,
+  TrashIcon,
+} from '../shared/icons'
 
 type EntrySectionKey = 'workExperience' | 'selectedProjects' | 'achievements'
 
@@ -242,6 +250,7 @@ export function ResumeEditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDuplicating, setIsDuplicating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
 
@@ -257,7 +266,10 @@ export function ResumeEditorPage() {
         setIsLoading(true)
         const nextResume = await api.getResume(id)
         if (!ignore) {
-          setDraft(nextResume)
+          setDraft({
+            ...nextResume,
+            tags: nextResume.tags ?? [],
+          })
           setError(null)
         }
       } catch (loadError) {
@@ -335,6 +347,7 @@ export function ResumeEditorPage() {
       const savedResume = await api.updateResume(draft.id, {
         title: draft.title,
         templateKey: draft.templateKey,
+        tags: draft.tags,
         data: draft.data,
       })
       setDraft(savedResume)
@@ -371,6 +384,27 @@ export function ResumeEditorPage() {
     }
   }
 
+  async function handleDuplicate() {
+    if (!draft) {
+      return
+    }
+
+    try {
+      setIsDuplicating(true)
+      setError(null)
+      const duplicate = await api.duplicateResume(draft.id)
+      navigate(`/resumes/${duplicate.id}/edit`)
+    } catch (duplicateError) {
+      setError(
+        duplicateError instanceof Error
+          ? duplicateError.message
+          : 'Failed to duplicate resume.',
+      )
+    } finally {
+      setIsDuplicating(false)
+    }
+  }
+
   if (isLoading) {
     return <div className="empty-card">Loading resume editor...</div>
   }
@@ -394,37 +428,48 @@ export function ResumeEditorPage() {
         </div>
 
         <div className="toolbar-actions">
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
+          <IconButton
+            label="Back to resumes"
+            variant="secondary"
+            icon={<ArrowLeftIcon />}
             onClick={() => navigate('/resumes')}
-          >
-            Back
-          </button>
+            disabled={isSaving || isDeleting || isDuplicating}
+          />
           <a
-            className="btn btn-outline-primary"
+            className="btn btn-icon btn-outline-primary"
             href={getResumePdfUrl(draft.id)}
             target="_blank"
             rel="noreferrer"
+            aria-label="Download PDF"
+            title="Download PDF"
           >
-            Download PDF
+            <DownloadIcon />
           </a>
-          <button
-            type="button"
-            className="btn btn-primary"
+          <IconButton
+            label="Save resume"
+            variant="primary"
+            solid
+            icon={<SaveIcon />}
+            isLoading={isSaving}
+            disabled={isDeleting || isDuplicating}
             onClick={() => void handleSave()}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save Resume'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline-danger"
+          />
+          <IconButton
+            label="Duplicate resume"
+            variant="secondary"
+            icon={<CopyIcon />}
+            isLoading={isDuplicating}
+            disabled={isSaving || isDeleting}
+            onClick={() => void handleDuplicate()}
+          />
+          <IconButton
+            label="Delete resume"
+            variant="danger"
+            icon={<TrashIcon />}
+            isLoading={isDeleting}
+            disabled={isSaving || isDuplicating}
             onClick={() => void handleDelete()}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </button>
+          />
         </div>
       </div>
 
@@ -528,6 +573,20 @@ export function ResumeEditorPage() {
                 />
               </label>
             </div>
+
+            <TagInputEditor
+              label="CV Tags"
+              placeholder="e.g. Primary CV, WordPress"
+              tags={draft.tags}
+              onChange={(tags) => {
+                setDraft({ ...draft, tags })
+                setStatus(null)
+              }}
+            />
+            <p className="editor-copy">
+              Use tags to organize saved CVs in your library. Tags are not included on
+              the exported PDF.
+            </p>
 
             <div className="stack-gap">
               {activeData.personal.links.map((link, index) => (

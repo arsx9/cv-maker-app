@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
+import { filterCoverLettersByQuery } from '../../lib/coverLetterSearch'
 import type { CoverLetterListItem } from '../../lib/documents'
 
 export function CoverLetterListPage() {
@@ -8,7 +9,13 @@ export function CoverLetterListPage() {
   const [letters, setLetters] = useState<CoverLetterListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  const filteredLetters = useMemo(
+    () => filterCoverLettersByQuery(letters, searchQuery),
+    [letters, searchQuery],
+  )
 
   useEffect(() => {
     let ignore = false
@@ -18,7 +25,12 @@ export function CoverLetterListPage() {
         setIsLoading(true)
         const nextLetters = await api.getCoverLetters()
         if (!ignore) {
-          setLetters(nextLetters)
+          setLetters(
+            nextLetters.map((letter) => ({
+              ...letter,
+              tags: letter.tags ?? [],
+            })),
+          )
           setError(null)
         }
       } catch (loadError) {
@@ -83,21 +95,48 @@ export function CoverLetterListPage() {
 
       {error ? <div className="alert alert-danger">{error}</div> : null}
 
+      {!isLoading && letters.length > 0 ? (
+        <label className="document-search-bar field-block">
+          <span>Search cover letters</span>
+          <input
+            type="search"
+            className="form-control"
+            value={searchQuery}
+            placeholder="Search by name or tag (e.g. Primary, WordPress)"
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+        </label>
+      ) : null}
+
       {isLoading ? (
         <div className="empty-card">Loading cover letters...</div>
       ) : letters.length === 0 ? (
         <div className="empty-card">
           No cover letters yet. Create one to start writing.
         </div>
+      ) : filteredLetters.length === 0 ? (
+        <div className="empty-card">
+          No cover letters match &quot;{searchQuery.trim()}&quot;. Try another name or
+          tag.
+        </div>
       ) : (
         <div className="document-grid">
-          {letters.map((letter) => (
+          {filteredLetters.map((letter) => (
             <article className="document-card" key={letter.id}>
               <div>
                 <p className="document-card-eyebrow">
                   {letter.linkedResumeId ? 'Linked to resume' : 'Standalone'}
                 </p>
                 <h3>{letter.title}</h3>
+                {letter.tags.length > 0 ? (
+                  <div className="document-tag-list">
+                    {letter.tags.map((tag) => (
+                      <span className="document-tag" key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 <p className="document-card-meta">
                   Updated {new Date(letter.updatedAt).toLocaleString()}
                 </p>
