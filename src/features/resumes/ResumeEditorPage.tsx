@@ -42,6 +42,7 @@ type EntrySectionEditorProps = {
   entries: ResumeEntry[]
   onChange: (entries: ResumeEntry[]) => void
   prefix: string
+  prependNewEntries?: boolean
 }
 
 function createEmptyEntry(prefix: string): ResumeEntry {
@@ -97,6 +98,7 @@ function EntrySectionEditor({
   entries,
   onChange,
   prefix,
+  prependNewEntries = false,
 }: EntrySectionEditorProps) {
   function updateEntry(index: number, nextEntry: ResumeEntry) {
     onChange(entries.map((entry, entryIndex) => (entryIndex === index ? nextEntry : entry)))
@@ -113,7 +115,8 @@ function EntrySectionEditor({
   }
 
   function addEntry() {
-    onChange([...entries, createEmptyEntry(prefix)])
+    const nextEntry = createEmptyEntry(prefix)
+    onChange(prependNewEntries ? [nextEntry, ...entries] : [...entries, nextEntry])
   }
 
   function removeEntry(index: number) {
@@ -648,6 +651,7 @@ export function ResumeEditorPage() {
             title="Work Experience"
             entries={activeData.workExperience}
             prefix="work"
+            prependNewEntries
             onChange={(entries) => updateEntrySection('workExperience', entries)}
           />
 
@@ -655,6 +659,7 @@ export function ResumeEditorPage() {
             title="Selected Projects"
             entries={activeData.selectedProjects}
             prefix="project"
+            prependNewEntries
             onChange={(entries) => updateEntrySection('selectedProjects', entries)}
           />
 
@@ -666,8 +671,8 @@ export function ResumeEditorPage() {
           />
 
           <section className="editor-card">
-            <h3>Skills and Education</h3>
-            <div className="form-grid two-col">
+            <h3>Skills</h3>
+            <div className="stack-gap">
               <TagInputEditor
                 label="Technical Skills"
                 tags={activeData.skills.technical}
@@ -704,6 +709,12 @@ export function ResumeEditorPage() {
                   })
                 }
               />
+            </div>
+          </section>
+
+          <section className="editor-card">
+            <h3>Education</h3>
+            <div className="form-grid two-col">
               <label className="field-block">
                 <span>Degree</span>
                 <input
@@ -721,22 +732,6 @@ export function ResumeEditorPage() {
                 />
               </label>
               <label className="field-block">
-                <span>Institution</span>
-                <input
-                  className="form-control"
-                  value={activeData.education.institution}
-                  onChange={(event) =>
-                    updateDraft({
-                      ...activeData,
-                      education: {
-                        ...activeData.education,
-                        institution: event.target.value,
-                      },
-                    })
-                  }
-                />
-              </label>
-              <label className="field-block">
                 <span>Education Date</span>
                 <input
                   className="form-control"
@@ -747,6 +742,22 @@ export function ResumeEditorPage() {
                       education: {
                         ...activeData.education,
                         date: event.target.value,
+                      },
+                    })
+                  }
+                />
+              </label>
+              <label className="field-block field-block-full">
+                <span>Institution</span>
+                <input
+                  className="form-control"
+                  value={activeData.education.institution}
+                  onChange={(event) =>
+                    updateDraft({
+                      ...activeData,
+                      education: {
+                        ...activeData.education,
+                        institution: event.target.value,
                       },
                     })
                   }

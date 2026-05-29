@@ -130,14 +130,20 @@ export const classicCvStyles = `
 }
 
 .classic-cv-page .tag-line {
-  display: grid;
-  gap: 4pt;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6pt;
+}
+
+.classic-cv-page .tag-line > strong {
+  flex-shrink: 0;
 }
 
 .classic-cv-page .tag-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4pt;
+  gap: 3pt;
 }
 
 .classic-cv-page .tag-pill {
@@ -145,7 +151,7 @@ export const classicCvStyles = `
   align-items: center;
   padding: 1.5pt 5pt;
   border: 0.8pt solid color-mix(in srgb, var(--heading-color) 22%, white);
-  border-radius: 7pt;
+  border-radius: 5pt;
   background: color-mix(in srgb, var(--heading-color) 8%, white);
   font-size: 8.5pt;
   line-height: 1.2;
@@ -291,6 +297,9 @@ export function ClassicCvPreview({
     '--page-font-family': documentFontStacks[resume.styleSettings.fontFamily],
   } as React.CSSProperties
 
+  const skillsVisible = !resume.hiddenSections.includes('skills')
+  const toolsVisible = !resume.hiddenSections.includes('tools')
+
   const sectionContent: Record<ResumeSectionId, React.ReactNode> = {
     summary: (
       <section className="cv-section" key="summary">
@@ -331,7 +340,7 @@ export function ClassicCvPreview({
             </div>
           </div>
           <div className="tag-line">
-            <strong>Soft Skills:</strong>
+            <strong>Soft skills:</strong>
             <div className="tag-row">
               {resume.skills.soft.map((skill) => (
                 <span className="tag-pill" key={skill}>
@@ -340,18 +349,33 @@ export function ClassicCvPreview({
               ))}
             </div>
           </div>
+          {toolsVisible && skillsVisible ? (
+            <div className="tag-line">
+              <strong>Tools:</strong>
+              <div className="tag-row">
+                {resume.tools.map((tool) => (
+                  <span className="tag-pill" key={tool}>
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
     ),
     tools: (
       <section className="cv-section" key="tools">
         <h2 className="section-title">{sectionTitles.tools}</h2>
-        <div className="tag-row">
-          {resume.tools.map((tool) => (
-            <span className="tag-pill" key={tool}>
-              {tool}
-            </span>
-          ))}
+        <div className="tag-line">
+          <strong>Tools:</strong>
+          <div className="tag-row">
+            {resume.tools.map((tool) => (
+              <span className="tag-pill" key={tool}>
+                {tool}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
     ),
@@ -398,7 +422,13 @@ export function ClassicCvPreview({
           </p>
         </header>
 
-        {visibleSections.map((sectionId) => sectionContent[sectionId])}
+        {visibleSections.map((sectionId) => {
+          if (sectionId === 'tools' && skillsVisible) {
+            return null
+          }
+
+          return sectionContent[sectionId]
+        })}
       </main>
     </>
   )
