@@ -2,7 +2,9 @@ import type { DocumentStyleSettings } from '../../lib/documents'
 import {
   documentFontOptions,
   documentPageSizeOptions,
+  documentTypographyFieldOptions,
 } from '../../lib/documents'
+import { CollapsibleEditorSection } from './CollapsibleEditorSection'
 
 type DocumentStyleEditorProps = {
   value: DocumentStyleSettings
@@ -10,12 +12,68 @@ type DocumentStyleEditorProps = {
   title?: string
 }
 
+type TypographyFieldKey = (typeof documentTypographyFieldOptions)[number]['key']
+
 function clampMargin(value: number) {
   return Math.min(Math.max(value, 0.2), 1.5)
 }
 
 function clampGutter(value: number) {
   return Math.min(Math.max(value, 0), 0.6)
+}
+
+function clampFontSize(value: number) {
+  return Math.min(Math.max(value, 7), 24)
+}
+
+function typographySizeKey(key: TypographyFieldKey) {
+  return `${key}Size` as keyof DocumentStyleSettings['typography']
+}
+
+function typographyBoldKey(key: TypographyFieldKey) {
+  return `${key}Bold` as keyof DocumentStyleSettings['typography']
+}
+
+function TypographyControlRow({
+  label,
+  size,
+  bold,
+  onSizeChange,
+  onBoldChange,
+}: {
+  label: string
+  size: number
+  bold: boolean
+  onSizeChange: (size: number) => void
+  onBoldChange: (bold: boolean) => void
+}) {
+  return (
+    <div className="typography-row">
+      <span className="typography-row-label">{label}</span>
+      <label className="field-block typography-size-field">
+        <span>Size (pt)</span>
+        <input
+          type="number"
+          className="form-control"
+          min="7"
+          max="24"
+          step="0.5"
+          value={size}
+          onChange={(event) =>
+            onSizeChange(clampFontSize(Number(event.target.value || size)))
+          }
+        />
+      </label>
+      <label className="toggle-field typography-bold-field">
+        <input
+          type="checkbox"
+          checked={bold}
+          onChange={(event) => onBoldChange(event.target.checked)}
+        />
+        Bold
+      </label>
+    </div>
+  )
 }
 
 export function DocumentStyleEditor({
@@ -36,9 +94,28 @@ export function DocumentStyleEditor({
     })
   }
 
+  function updateTypographySize(key: TypographyFieldKey, size: number) {
+    onChange({
+      ...value,
+      typography: {
+        ...value.typography,
+        [typographySizeKey(key)]: clampFontSize(size),
+      },
+    })
+  }
+
+  function updateTypographyBold(key: TypographyFieldKey, bold: boolean) {
+    onChange({
+      ...value,
+      typography: {
+        ...value.typography,
+        [typographyBoldKey(key)]: bold,
+      },
+    })
+  }
+
   return (
-    <section className="editor-card">
-      <h3>{title}</h3>
+    <CollapsibleEditorSection title={title}>
       <p className="editor-copy">
         Control accent color, typography, page size, margins, and gutter for
         both preview and PDF output.
@@ -125,6 +202,25 @@ export function DocumentStyleEditor({
         </label>
       </div>
 
+      <div className="typography-section">
+        <h4 className="typography-section-title">Typography</h4>
+        <p className="editor-copy">
+          Adjust font sizes and bold styling for each part of the document.
+        </p>
+        <div className="typography-grid">
+          {documentTypographyFieldOptions.map(({ key, label }) => (
+            <TypographyControlRow
+              key={key}
+              label={label}
+              size={value.typography[typographySizeKey(key)] as number}
+              bold={value.typography[typographyBoldKey(key)] as boolean}
+              onSizeChange={(size) => updateTypographySize(key, size)}
+              onBoldChange={(bold) => updateTypographyBold(key, bold)}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="form-grid four-col mt-3">
         <label className="field-block">
           <span>Top Margin</span>
@@ -179,6 +275,6 @@ export function DocumentStyleEditor({
           />
         </label>
       </div>
-    </section>
+    </CollapsibleEditorSection>
   )
 }

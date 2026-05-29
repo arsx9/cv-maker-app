@@ -25,6 +25,7 @@ import type {
 } from '../../lib/documents'
 import { resumeSectionOptions } from '../../lib/documents'
 import { DocumentStyleEditor } from '../shared/DocumentStyleEditor'
+import { CollapsibleEditorSection } from '../shared/CollapsibleEditorSection'
 import { TagInputEditor } from '../shared/TagInputEditor'
 import { ClassicCvPreview } from '../../templates/classicCv/ClassicCvPreview'
 import { IconButton } from '../shared/IconButton'
@@ -46,11 +47,33 @@ type SortableSectionItemProps = {
 }
 
 type EntrySectionEditorProps = {
-  title: string
+  panelTitle: string
+  sectionHeading: string
+  onSectionHeadingChange: (value: string) => void
   entries: ResumeEntry[]
   onChange: (entries: ResumeEntry[]) => void
   prefix: string
   prependNewEntries?: boolean
+}
+
+function SectionHeadingField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <label className="field-block">
+      <span>Section Heading</span>
+      <input
+        className="form-control"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Heading shown on CV"
+      />
+    </label>
+  )
 }
 
 function createEmptyEntry(prefix: string): ResumeEntry {
@@ -102,7 +125,9 @@ function SortableSectionItem({
 }
 
 function EntrySectionEditor({
-  title,
+  panelTitle,
+  sectionHeading,
+  onSectionHeadingChange,
   entries,
   onChange,
   prefix,
@@ -148,20 +173,25 @@ function EntrySectionEditor({
   }
 
   return (
-    <section className="editor-card">
-      <div className="editor-card-header">
-        <h3>{title}</h3>
-        <button type="button" className="btn btn-sm btn-outline-primary" onClick={addEntry}>
-          Add Item
-        </button>
-      </div>
+    <CollapsibleEditorSection title={panelTitle}>
+      <SectionHeadingField
+        value={sectionHeading}
+        onChange={onSectionHeadingChange}
+      />
+      <button
+        type="button"
+        className="btn btn-outline-primary entry-section-add-btn"
+        onClick={addEntry}
+      >
+        Add Item
+      </button>
 
       <div className="stack-gap">
         {entries.map((entry, index) => (
           <div className="nested-card" key={entry.id}>
             <div className="editor-card-header">
               <h4 className="nested-card-title">
-                {title} #{index + 1}
+                {sectionHeading} #{index + 1}
               </h4>
               <button
                 type="button"
@@ -238,7 +268,7 @@ function EntrySectionEditor({
           </div>
         ))}
       </div>
-    </section>
+    </CollapsibleEditorSection>
   )
 }
 
@@ -303,6 +333,20 @@ export function ResumeEditorPage() {
     updateDraft({
       ...draft.data,
       [section]: nextEntries,
+    })
+  }
+
+  function updateSectionTitle(sectionId: ResumeSectionId, title: string) {
+    if (!draft) {
+      return
+    }
+
+    updateDraft({
+      ...draft.data,
+      sectionTitles: {
+        ...normalizeResumeData(draft.data).sectionTitles,
+        [sectionId]: title,
+      },
     })
   }
 
@@ -478,8 +522,18 @@ export function ResumeEditorPage() {
 
       <div className="editor-layout">
         <div className="editor-pane">
-          <section className="editor-card">
-            <h3>Resume Details</h3>
+          <DocumentStyleEditor
+            title="CV Styling"
+            value={activeData.styleSettings}
+            onChange={(styleSettings) =>
+              updateDraft({
+                ...activeData,
+                styleSettings,
+              })
+            }
+          />
+
+          <CollapsibleEditorSection title="Resume Details">
             <div className="form-grid two-col">
               <label className="field-block">
                 <span>Document Title</span>
@@ -636,21 +690,9 @@ export function ResumeEditorPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </CollapsibleEditorSection>
 
-          <DocumentStyleEditor
-            title="CV Styling"
-            value={activeData.styleSettings}
-            onChange={(styleSettings) =>
-              updateDraft({
-                ...activeData,
-                styleSettings,
-              })
-            }
-          />
-
-          <section className="editor-card">
-            <h3>Section Order</h3>
+          <CollapsibleEditorSection title="Section Order">
             <p className="editor-copy">
               Drag to change layout order and toggle sections on or off.
             </p>
@@ -677,7 +719,7 @@ export function ResumeEditorPage() {
                       <SortableSectionItem
                         key={section.id}
                         sectionId={section.id}
-                        label={section.label}
+                        label={activeData.sectionTitles[section.id]}
                         isVisible={!activeData.hiddenSections.includes(section.id)}
                         onToggle={toggleSection}
                       />
@@ -686,10 +728,13 @@ export function ResumeEditorPage() {
                 </div>
               </SortableContext>
             </DndContext>
-          </section>
+          </CollapsibleEditorSection>
 
-          <section className="editor-card">
-            <h3>Professional Summary</h3>
+          <CollapsibleEditorSection title={activeData.sectionTitles.summary}>
+            <SectionHeadingField
+              value={activeData.sectionTitles.summary}
+              onChange={(title) => updateSectionTitle('summary', title)}
+            />
             <label className="field-block">
               <span>Summary</span>
               <textarea
@@ -704,10 +749,14 @@ export function ResumeEditorPage() {
                 }
               />
             </label>
-          </section>
+          </CollapsibleEditorSection>
 
           <EntrySectionEditor
-            title="Work Experience"
+            panelTitle={activeData.sectionTitles.workExperience}
+            sectionHeading={activeData.sectionTitles.workExperience}
+            onSectionHeadingChange={(title) =>
+              updateSectionTitle('workExperience', title)
+            }
             entries={activeData.workExperience}
             prefix="work"
             prependNewEntries
@@ -715,7 +764,11 @@ export function ResumeEditorPage() {
           />
 
           <EntrySectionEditor
-            title="Selected Projects"
+            panelTitle={activeData.sectionTitles.selectedProjects}
+            sectionHeading={activeData.sectionTitles.selectedProjects}
+            onSectionHeadingChange={(title) =>
+              updateSectionTitle('selectedProjects', title)
+            }
             entries={activeData.selectedProjects}
             prefix="project"
             prependNewEntries
@@ -723,14 +776,21 @@ export function ResumeEditorPage() {
           />
 
           <EntrySectionEditor
-            title="Achievements"
+            panelTitle={activeData.sectionTitles.achievements}
+            sectionHeading={activeData.sectionTitles.achievements}
+            onSectionHeadingChange={(title) =>
+              updateSectionTitle('achievements', title)
+            }
             entries={activeData.achievements}
             prefix="achievement"
             onChange={(entries) => updateEntrySection('achievements', entries)}
           />
 
-          <section className="editor-card">
-            <h3>Skills</h3>
+          <CollapsibleEditorSection title={activeData.sectionTitles.skills}>
+            <SectionHeadingField
+              value={activeData.sectionTitles.skills}
+              onChange={(title) => updateSectionTitle('skills', title)}
+            />
             <div className="stack-gap">
               <TagInputEditor
                 label="Technical Skills"
@@ -758,21 +818,31 @@ export function ResumeEditorPage() {
                   })
                 }
               />
-              <TagInputEditor
-                label="Tools"
-                tags={activeData.tools}
-                onChange={(tools) =>
-                  updateDraft({
-                    ...activeData,
-                    tools,
-                  })
-                }
-              />
             </div>
-          </section>
+          </CollapsibleEditorSection>
 
-          <section className="editor-card">
-            <h3>Education</h3>
+          <CollapsibleEditorSection title={activeData.sectionTitles.tools}>
+            <SectionHeadingField
+              value={activeData.sectionTitles.tools}
+              onChange={(title) => updateSectionTitle('tools', title)}
+            />
+            <TagInputEditor
+              label="Tools"
+              tags={activeData.tools}
+              onChange={(tools) =>
+                updateDraft({
+                  ...activeData,
+                  tools,
+                })
+              }
+            />
+          </CollapsibleEditorSection>
+
+          <CollapsibleEditorSection title={activeData.sectionTitles.education}>
+            <SectionHeadingField
+              value={activeData.sectionTitles.education}
+              onChange={(title) => updateSectionTitle('education', title)}
+            />
             <div className="form-grid two-col">
               <label className="field-block">
                 <span>Degree</span>
@@ -823,7 +893,7 @@ export function ResumeEditorPage() {
                 />
               </label>
             </div>
-          </section>
+          </CollapsibleEditorSection>
         </div>
 
         <div className="preview-pane">

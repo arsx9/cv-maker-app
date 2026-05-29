@@ -2,14 +2,24 @@ import type {
   CoverLetterData,
   DocumentStyleSettings,
   ResumeData,
+  ResumeSectionId,
+  ResumeSectionTitles,
 } from './documents'
+import { defaultResumeSectionTitles, defaultDocumentTypography } from './documents'
 
-type PartialStyleSettings = Partial<DocumentStyleSettings> & {
+type PartialStyleSettings = Partial<
+  Omit<DocumentStyleSettings, 'margins' | 'typography'>
+> & {
   margins?: Partial<DocumentStyleSettings['margins']>
+  typography?: Partial<DocumentStyleSettings['typography']>
 }
 
-type ResumeDataInput = Omit<ResumeData, 'styleSettings' | 'skills' | 'tools'> & {
+type ResumeDataInput = Omit<
+  ResumeData,
+  'styleSettings' | 'skills' | 'tools' | 'sectionTitles'
+> & {
   styleSettings?: PartialStyleSettings
+  sectionTitles?: Partial<ResumeSectionTitles>
   skills: {
     technical: string[] | string
     soft: string[] | string
@@ -32,6 +42,7 @@ export const defaultResumeStyleSettings: DocumentStyleSettings = {
     bottom: 0.3,
     left: 0.3,
   },
+  typography: { ...defaultDocumentTypography },
 }
 
 export const defaultCoverLetterStyleSettings: DocumentStyleSettings = {
@@ -45,6 +56,7 @@ export const defaultCoverLetterStyleSettings: DocumentStyleSettings = {
     bottom: 0.3,
     left: 0.3,
   },
+  typography: { ...defaultDocumentTypography },
 }
 
 export const defaultResumeData: ResumeData = {
@@ -74,6 +86,7 @@ export const defaultResumeData: ResumeData = {
     'tools',
     'education',
   ],
+  sectionTitles: { ...defaultResumeSectionTitles },
   hiddenSections: [],
   workExperience: [
     {
@@ -318,6 +331,46 @@ export function createCoverLetterFromResume(resume: ResumeData): CoverLetterData
   }
 }
 
+export function normalizeTypography(
+  input: Partial<DocumentStyleSettings['typography']> | undefined,
+  defaults: DocumentStyleSettings['typography'],
+): DocumentStyleSettings['typography'] {
+  function clampSize(value: number | undefined, fallback: number) {
+    if (typeof value !== 'number') {
+      return fallback
+    }
+
+    return Math.min(Math.max(value, 7), 24)
+  }
+
+  return {
+    nameSize: clampSize(input?.nameSize, defaults.nameSize),
+    nameBold:
+      typeof input?.nameBold === 'boolean' ? input.nameBold : defaults.nameBold,
+    headerTextSize: clampSize(input?.headerTextSize, defaults.headerTextSize),
+    headerTextBold:
+      typeof input?.headerTextBold === 'boolean'
+        ? input.headerTextBold
+        : defaults.headerTextBold,
+    sectionTitleSize: clampSize(input?.sectionTitleSize, defaults.sectionTitleSize),
+    sectionTitleBold:
+      typeof input?.sectionTitleBold === 'boolean'
+        ? input.sectionTitleBold
+        : defaults.sectionTitleBold,
+    subheadingSize: clampSize(input?.subheadingSize, defaults.subheadingSize),
+    subheadingBold:
+      typeof input?.subheadingBold === 'boolean'
+        ? input.subheadingBold
+        : defaults.subheadingBold,
+    bodySize: clampSize(input?.bodySize, defaults.bodySize),
+    bodyBold:
+      typeof input?.bodyBold === 'boolean' ? input.bodyBold : defaults.bodyBold,
+    tagSize: clampSize(input?.tagSize, defaults.tagSize),
+    tagBold:
+      typeof input?.tagBold === 'boolean' ? input.tagBold : defaults.tagBold,
+  }
+}
+
 export function normalizeStyleSettings(
   input: PartialStyleSettings | undefined,
   defaults: DocumentStyleSettings,
@@ -346,12 +399,34 @@ export function normalizeStyleSettings(
           ? input.margins.left
           : defaults.margins.left,
     },
+    typography: normalizeTypography(input?.typography, defaults.typography),
   }
+}
+
+export function normalizeSectionTitles(
+  input: Partial<ResumeSectionTitles> | undefined,
+): ResumeSectionTitles {
+  const titles = { ...defaultResumeSectionTitles }
+
+  if (input) {
+    for (const sectionId of Object.keys(
+      defaultResumeSectionTitles,
+    ) as ResumeSectionId[]) {
+      const title = input[sectionId]
+
+      if (typeof title === 'string' && title.trim()) {
+        titles[sectionId] = title.trim()
+      }
+    }
+  }
+
+  return titles
 }
 
 export function normalizeResumeData(input: ResumeDataInput): ResumeData {
   return {
     ...input,
+    sectionTitles: normalizeSectionTitles(input.sectionTitles),
     skills: {
       technical: normalizeStringList(input.skills.technical),
       soft: normalizeStringList(input.skills.soft),

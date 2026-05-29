@@ -2,6 +2,8 @@ import React from 'react'
 import {
   documentFontStacks,
   documentPageDimensions,
+  documentTypographyCssVars,
+  getDocumentFontStylesheet,
 } from '../../lib/documents'
 import type { ResumeData, ResumeEntry, ResumeSectionId } from '../../lib/documents'
 
@@ -28,7 +30,8 @@ export const classicCvStyles = `
   background: #fff;
   color: var(--text-color);
   font-family: var(--page-font-family);
-  font-size: var(--base-font-size);
+  font-size: var(--body-font-size, 10pt);
+  font-weight: var(--body-font-weight, 400);
   line-height: 1.35;
   padding:
     var(--page-padding-top)
@@ -68,9 +71,9 @@ export const classicCvStyles = `
 }
 
 .classic-cv-page .name {
-  font-size: 16pt;
+  font-size: var(--name-font-size, 16pt);
   font-variant: small-caps;
-  font-weight: 700;
+  font-weight: var(--name-font-weight, 700);
   letter-spacing: 0.5px;
   line-height: 1.2;
   margin: 0;
@@ -78,7 +81,8 @@ export const classicCvStyles = `
 
 .classic-cv-page .designation,
 .classic-cv-page .contact {
-  font-size: 10pt;
+  font-size: var(--header-text-font-size, 10pt);
+  font-weight: var(--header-text-font-weight, 400);
   margin: 4pt 0 0;
 }
 
@@ -100,8 +104,8 @@ export const classicCvStyles = `
 }
 
 .classic-cv-page .section-title {
-  font-size: 12pt;
-  font-weight: 700;
+  font-size: var(--section-title-font-size, 12pt);
+  font-weight: var(--section-title-font-weight, 700);
   font-variant: small-caps;
   color: var(--heading-color);
   border-bottom: 1px solid var(--rule-color);
@@ -114,6 +118,8 @@ export const classicCvStyles = `
 
 .classic-cv-page .summary,
 .classic-cv-page .bullets li {
+  font-size: var(--body-font-size, 10pt);
+  font-weight: var(--body-font-weight, 400);
   text-align: justify;
   orphans: 3;
   widows: 3;
@@ -133,11 +139,13 @@ export const classicCvStyles = `
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6pt;
+  gap: 6pt 3pt;
 }
 
 .classic-cv-page .tag-line > strong {
   flex-shrink: 0;
+  font-size: var(--subheading-font-size, 10pt);
+  font-weight: var(--subheading-font-weight, 700);
 }
 
 .classic-cv-page .tag-row {
@@ -153,7 +161,8 @@ export const classicCvStyles = `
   border: 0.8pt solid color-mix(in srgb, var(--heading-color) 22%, white);
   border-radius: 5pt;
   background: color-mix(in srgb, var(--heading-color) 8%, white);
-  font-size: 8.5pt;
+  font-size: var(--tag-font-size, 8.5pt);
+  font-weight: var(--tag-font-weight, 400);
   line-height: 1.2;
 }
 
@@ -179,8 +188,14 @@ export const classicCvStyles = `
   min-width: 0;
 }
 
+.classic-cv-page .entry-header strong,
+.classic-cv-page .education-row strong {
+  font-size: var(--subheading-font-size, 10pt);
+  font-weight: var(--subheading-font-weight, 700);
+}
+
 .classic-cv-page .company {
-  font-size: 9.5pt;
+  font-size: calc(var(--subheading-font-size, 10pt) * 0.95);
 }
 
 .classic-cv-page .date {
@@ -250,16 +265,6 @@ type ClassicCvPreviewProps = {
   includeStyles?: boolean
 }
 
-const sectionTitles: Record<ResumeSectionId, string> = {
-  summary: 'Professional Summary',
-  workExperience: 'Work Experience',
-  selectedProjects: 'Selected Projects',
-  achievements: 'Achievements',
-  skills: 'Skills',
-  tools: 'Tools',
-  education: 'Education',
-}
-
 function renderEntry(entry: ResumeEntry) {
   return (
     <div className="entry" key={entry.id}>
@@ -295,93 +300,72 @@ export function ClassicCvPreview({
     '--page-padding-bottom': `${resume.styleSettings.margins.bottom}in`,
     '--page-padding-left': `${resume.styleSettings.margins.left + gutterSplit}in`,
     '--page-font-family': documentFontStacks[resume.styleSettings.fontFamily],
+    ...documentTypographyCssVars(resume.styleSettings.typography),
   } as React.CSSProperties
-
-  const skillsVisible = !resume.hiddenSections.includes('skills')
-  const toolsVisible = !resume.hiddenSections.includes('tools')
 
   const sectionContent: Record<ResumeSectionId, React.ReactNode> = {
     summary: (
       <section className="cv-section" key="summary">
-        <h2 className="section-title">{sectionTitles.summary}</h2>
+        <h2 className="section-title">{resume.sectionTitles.summary}</h2>
         <p className="summary">{resume.summary}</p>
       </section>
     ),
     workExperience: (
       <section className="cv-section" key="workExperience">
-        <h2 className="section-title">{sectionTitles.workExperience}</h2>
+        <h2 className="section-title">{resume.sectionTitles.workExperience}</h2>
         {resume.workExperience.map(renderEntry)}
       </section>
     ),
     selectedProjects: (
       <section className="cv-section" key="selectedProjects">
-        <h2 className="section-title">{sectionTitles.selectedProjects}</h2>
+        <h2 className="section-title">{resume.sectionTitles.selectedProjects}</h2>
         {resume.selectedProjects.map(renderEntry)}
       </section>
     ),
     achievements: (
       <section className="cv-section" key="achievements">
-        <h2 className="section-title">{sectionTitles.achievements}</h2>
+        <h2 className="section-title">{resume.sectionTitles.achievements}</h2>
         {resume.achievements.map(renderEntry)}
       </section>
     ),
     skills: (
       <section className="cv-section" key="skills">
-        <h2 className="section-title">{sectionTitles.skills}</h2>
+        <h2 className="section-title">{resume.sectionTitles.skills}</h2>
         <div className="tag-section">
           <div className="tag-line">
             <strong>Technical skills:</strong>
-            <div className="tag-row">
-              {resume.skills.technical.map((skill) => (
-                <span className="tag-pill" key={skill}>
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {resume.skills.technical.map((skill) => (
+              <span className="tag-pill" key={skill}>
+                {skill}
+              </span>
+            ))}
           </div>
           <div className="tag-line">
             <strong>Soft skills:</strong>
-            <div className="tag-row">
-              {resume.skills.soft.map((skill) => (
-                <span className="tag-pill" key={skill}>
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-          {toolsVisible && skillsVisible ? (
-            <div className="tag-line">
-              <strong>Tools:</strong>
-              <div className="tag-row">
-                {resume.tools.map((tool) => (
-                  <span className="tag-pill" key={tool}>
-                    {tool}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </section>
-    ),
-    tools: (
-      <section className="cv-section" key="tools">
-        <h2 className="section-title">{sectionTitles.tools}</h2>
-        <div className="tag-line">
-          <strong>Tools:</strong>
-          <div className="tag-row">
-            {resume.tools.map((tool) => (
-              <span className="tag-pill" key={tool}>
-                {tool}
+            {resume.skills.soft.map((skill) => (
+              <span className="tag-pill" key={skill}>
+                {skill}
               </span>
             ))}
           </div>
         </div>
       </section>
     ),
+    tools: (
+      <section className="cv-section" key="tools">
+        <h2 className="section-title">{resume.sectionTitles.tools}</h2>
+        <div className="tag-row">
+          {resume.tools.map((tool) => (
+            <span className="tag-pill" key={tool}>
+              {tool}
+            </span>
+          ))}
+        </div>
+      </section>
+    ),
     education: (
       <section className="cv-section" key="education">
-        <h2 className="section-title">{sectionTitles.education}</h2>
+        <h2 className="section-title">{resume.sectionTitles.education}</h2>
         <div className="education-row">
           <span>
             <strong>{resume.education.degree}</strong>
@@ -397,9 +381,11 @@ export function ClassicCvPreview({
   const visibleSections = resume.sectionOrder.filter(
     (sectionId) => !resume.hiddenSections.includes(sectionId),
   )
+  const fontStylesheet = getDocumentFontStylesheet(resume.styleSettings.fontFamily)
 
   return (
     <>
+      {fontStylesheet ? <link rel="stylesheet" href={fontStylesheet} /> : null}
       {includeStyles ? <style>{classicCvStyles}</style> : null}
       <main className="classic-cv-page" style={pageStyle}>
         <header className="cv-header">
@@ -422,13 +408,7 @@ export function ClassicCvPreview({
           </p>
         </header>
 
-        {visibleSections.map((sectionId) => {
-          if (sectionId === 'tools' && skillsVisible) {
-            return null
-          }
-
-          return sectionContent[sectionId]
-        })}
+        {visibleSections.map((sectionId) => sectionContent[sectionId])}
       </main>
     </>
   )

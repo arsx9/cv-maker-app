@@ -26,7 +26,7 @@ export type ResumeSkills = {
   soft: string[]
 }
 
-export type DocumentFontKey = 'charter' | 'inter' | 'georgia' | 'garamond'
+export type DocumentFontKey = 'charter' | 'inter' | 'georgia' | 'garamond' | 'lato'
 
 export type DocumentPageSizeKey = 'a4' | 'letter'
 
@@ -37,13 +37,31 @@ export type DocumentMargins = {
   left: number
 }
 
+export type DocumentTypography = {
+  nameSize: number
+  nameBold: boolean
+  headerTextSize: number
+  headerTextBold: boolean
+  sectionTitleSize: number
+  sectionTitleBold: boolean
+  subheadingSize: number
+  subheadingBold: boolean
+  bodySize: number
+  bodyBold: boolean
+  tagSize: number
+  tagBold: boolean
+}
+
 export type DocumentStyleSettings = {
   accentColor: string
   fontFamily: DocumentFontKey
   pageSize: DocumentPageSizeKey
   gutter: number
   margins: DocumentMargins
+  typography: DocumentTypography
 }
+
+export type ResumeSectionTitles = Record<ResumeSectionId, string>
 
 export type ResumeEducation = {
   degree: string
@@ -65,6 +83,7 @@ export type ResumeData = {
   styleSettings: DocumentStyleSettings
   summary: string
   sectionOrder: ResumeSectionId[]
+  sectionTitles: ResumeSectionTitles
   hiddenSections: ResumeSectionId[]
   workExperience: ResumeEntry[]
   selectedProjects: ResumeEntry[]
@@ -136,6 +155,60 @@ export const resumeSectionOptions: Array<{
   { id: 'education', label: 'Education' },
 ]
 
+export const defaultResumeSectionTitles: ResumeSectionTitles = Object.fromEntries(
+  resumeSectionOptions.map(({ id, label }) => [id, label]),
+) as ResumeSectionTitles
+
+export const defaultDocumentTypography: DocumentTypography = {
+  nameSize: 16,
+  nameBold: true,
+  headerTextSize: 10,
+  headerTextBold: false,
+  sectionTitleSize: 12,
+  sectionTitleBold: true,
+  subheadingSize: 10,
+  subheadingBold: true,
+  bodySize: 10,
+  bodyBold: false,
+  tagSize: 8.5,
+  tagBold: false,
+}
+
+export const documentTypographyFieldOptions = [
+  { key: 'name', label: 'Name' },
+  { key: 'headerText', label: 'Header text (headline & contact)' },
+  { key: 'sectionTitle', label: 'Section headings' },
+  { key: 'subheading', label: 'Subheadings (entry titles)' },
+  { key: 'body', label: 'Body text (summary & bullets)' },
+  { key: 'tag', label: 'Tags (skills & tools)' },
+] as const satisfies ReadonlyArray<{
+  key: 'name' | 'headerText' | 'sectionTitle' | 'subheading' | 'body' | 'tag'
+  label: string
+}>
+
+function typographyFontWeight(bold: boolean) {
+  return bold ? '700' : '400'
+}
+
+export function documentTypographyCssVars(
+  typography: DocumentTypography,
+): Record<string, string> {
+  return {
+    '--name-font-size': `${typography.nameSize}pt`,
+    '--name-font-weight': typographyFontWeight(typography.nameBold),
+    '--header-text-font-size': `${typography.headerTextSize}pt`,
+    '--header-text-font-weight': typographyFontWeight(typography.headerTextBold),
+    '--section-title-font-size': `${typography.sectionTitleSize}pt`,
+    '--section-title-font-weight': typographyFontWeight(typography.sectionTitleBold),
+    '--subheading-font-size': `${typography.subheadingSize}pt`,
+    '--subheading-font-weight': typographyFontWeight(typography.subheadingBold),
+    '--body-font-size': `${typography.bodySize}pt`,
+    '--body-font-weight': typographyFontWeight(typography.bodyBold),
+    '--tag-font-size': `${typography.tagSize}pt`,
+    '--tag-font-weight': typographyFontWeight(typography.tagBold),
+  }
+}
+
 export const documentFontOptions: Array<{
   id: DocumentFontKey
   label: string
@@ -144,6 +217,7 @@ export const documentFontOptions: Array<{
   { id: 'inter', label: 'Inter Sans' },
   { id: 'georgia', label: 'Georgia Serif' },
   { id: 'garamond', label: 'Garamond Serif' },
+  { id: 'lato', label: 'Lato Sans' },
 ]
 
 export const documentPageSizeOptions: Array<{
@@ -161,6 +235,17 @@ export const documentFontStacks: Record<DocumentFontKey, string> = {
     'Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   georgia: 'Georgia, "Times New Roman", serif',
   garamond: '"EB Garamond", Garamond, "Times New Roman", serif',
+  lato: 'Lato, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+}
+
+export const documentFontStylesheets: Partial<Record<DocumentFontKey, string>> = {
+  lato: 'https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap',
+}
+
+export function getDocumentFontStylesheet(
+  fontFamily: DocumentFontKey,
+): string | undefined {
+  return documentFontStylesheets[fontFamily]
 }
 
 export const documentPageDimensions: Record<

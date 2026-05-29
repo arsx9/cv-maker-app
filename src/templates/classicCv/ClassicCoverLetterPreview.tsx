@@ -2,6 +2,8 @@ import React from 'react'
 import {
   documentFontStacks,
   documentPageDimensions,
+  documentTypographyCssVars,
+  getDocumentFontStylesheet,
 } from '../../lib/documents'
 import type { CoverLetterData } from '../../lib/documents'
 
@@ -57,7 +59,8 @@ export const classicCoverLetterStyles = `
 
 .classic-cover-letter .sender-name {
   margin: 0 0 10px;
-  font-size: 1.6rem;
+  font-size: var(--name-font-size, 16pt);
+  font-weight: var(--name-font-weight, 700);
   line-height: 1.2;
   letter-spacing: 0.01em;
 }
@@ -69,7 +72,8 @@ export const classicCoverLetterStyles = `
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.95rem;
+  font-size: var(--header-text-font-size, 10pt);
+  font-weight: var(--header-text-font-weight, 400);
   color: #475467;
 }
 
@@ -86,8 +90,8 @@ export const classicCoverLetterStyles = `
 .classic-cover-letter .date-line {
   margin: 0 0 18px;
   text-align: right;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: var(--header-text-font-size, 10pt);
+  font-weight: var(--header-text-font-weight, 600);
 }
 
 .classic-cover-letter .recipient {
@@ -103,7 +107,8 @@ export const classicCoverLetterStyles = `
 
 .classic-cover-letter .subject-line {
   display: inline-block;
-  font-weight: 700;
+  font-size: var(--section-title-font-size, 12pt);
+  font-weight: var(--section-title-font-weight, 700);
   margin-bottom: 18px;
   padding-bottom: 4px;
   border-bottom: 2px solid rgba(43, 95, 184, 0.22);
@@ -113,11 +118,14 @@ export const classicCoverLetterStyles = `
 
 .classic-cover-letter .greeting {
   margin-bottom: 18px;
-  font-weight: 600;
+  font-size: var(--subheading-font-size, 10pt);
+  font-weight: var(--subheading-font-weight, 600);
 }
 
 .classic-cover-letter .paragraph {
   margin: 0 0 16px;
+  font-size: var(--body-font-size, 10pt);
+  font-weight: var(--body-font-weight, 400);
   text-align: justify;
   orphans: 3;
   widows: 3;
@@ -134,7 +142,8 @@ export const classicCoverLetterStyles = `
 .classic-cover-letter .signature-name {
   display: inline-block;
   margin-top: 10px;
-  font-weight: 700;
+  font-size: var(--subheading-font-size, 10pt);
+  font-weight: var(--subheading-font-weight, 700);
   color: var(--accent-color);
 }
 
@@ -188,6 +197,7 @@ export function ClassicCoverLetterPreview({
     '--page-padding-left': `${coverLetter.styleSettings.margins.left + gutterSplit}in`,
     '--page-font-family': documentFontStacks[coverLetter.styleSettings.fontFamily],
     '--accent-color': coverLetter.styleSettings.accentColor,
+    ...documentTypographyCssVars(coverLetter.styleSettings.typography),
   } as React.CSSProperties
 
   const senderLines = [
@@ -209,9 +219,13 @@ export function ClassicCoverLetterPreview({
   ]
     .filter(Boolean)
     .join('\n')
+  const fontStylesheet = getDocumentFontStylesheet(
+    coverLetter.styleSettings.fontFamily,
+  )
 
   return (
     <>
+      {fontStylesheet ? <link rel="stylesheet" href={fontStylesheet} /> : null}
       {includeStyles ? <style>{classicCoverLetterStyles}</style> : null}
       <main className="classic-cover-letter" style={pageStyle}>
         <header className="letter-header">

@@ -31,8 +31,10 @@ a {
 
 .builder-shell {
   min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .builder-sidebar {
@@ -103,12 +105,21 @@ a {
 
 .builder-content {
   padding: 28px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .page-panel,
 .editor-page {
   display: grid;
   gap: 20px;
+}
+
+.editor-page {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: calc(100vh - 56px);
+  max-height: calc(100vh - 56px);
+  overflow: hidden;
 }
 
 .page-panel-header {
@@ -146,6 +157,51 @@ a {
   border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 18px;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+}
+
+.collapsible-editor-section.editor-card {
+  padding: 0;
+}
+
+.collapsible-editor-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.collapsible-editor-header:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.collapsible-editor-header h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.collapsible-editor-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.collapsible-editor-section.is-collapsed .collapsible-editor-chevron {
+  transform: rotate(-90deg);
+}
+
+.collapsible-editor-body {
+  padding: 0 18px 18px;
+  display: grid;
+  gap: 16px;
 }
 
 .document-card,
@@ -205,12 +261,18 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .editor-pane {
   display: grid;
   gap: 16px;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .editor-card,
@@ -262,6 +324,51 @@ a {
   gap: 14px;
 }
 
+.entry-section-add-btn {
+  width: 100%;
+  margin-top: 14px;
+  margin-bottom: 16px;
+}
+
+.typography-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.typography-section-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.typography-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.typography-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(110px, 0.8fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.typography-row-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  padding-bottom: 8px;
+}
+
+.typography-size-field {
+  margin: 0;
+}
+
+.typography-bold-field {
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+
 .nested-card {
   display: grid;
   gap: 14px;
@@ -302,12 +409,25 @@ a {
 }
 
 .preview-pane {
-  position: sticky;
-  top: 24px;
+  position: static;
+  top: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
 }
 
 .preview-scroll {
-  overflow: auto;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   padding: 4px;
 }
 
@@ -361,7 +481,21 @@ a {
 
 @media (max-width: 1280px) {
   .builder-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
     grid-template-columns: 1fr;
+  }
+
+  .builder-content {
+    overflow: visible;
+  }
+
+  .editor-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    grid-template-rows: auto auto auto;
   }
 
   .builder-sidebar {
@@ -371,6 +505,14 @@ a {
 
   .editor-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(320px, 45vh) minmax(320px, 45vh);
+    overflow: hidden;
+    min-height: min(90vh, 900px);
+  }
+
+  .editor-pane,
+  .preview-pane {
+    min-height: 0;
   }
 
   .preview-pane {

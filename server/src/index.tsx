@@ -17,6 +17,7 @@ import {
 } from '../../src/lib/defaults'
 import {
   documentPageDimensions,
+  getDocumentFontStylesheet,
 } from '../../src/lib/documents'
 import type {
   CoverLetterData,
@@ -47,9 +48,26 @@ const resumeEntrySchema = z.object({
   bullets: z.array(z.string()),
 })
 
+const documentTypographySchema = z
+  .object({
+    nameSize: z.number().optional(),
+    nameBold: z.boolean().optional(),
+    headerTextSize: z.number().optional(),
+    headerTextBold: z.boolean().optional(),
+    sectionTitleSize: z.number().optional(),
+    sectionTitleBold: z.boolean().optional(),
+    subheadingSize: z.number().optional(),
+    subheadingBold: z.boolean().optional(),
+    bodySize: z.number().optional(),
+    bodyBold: z.boolean().optional(),
+    tagSize: z.number().optional(),
+    tagBold: z.boolean().optional(),
+  })
+  .optional()
+
 const documentStyleSettingsSchema = z.object({
   accentColor: z.string(),
-  fontFamily: z.enum(['charter', 'inter', 'georgia', 'garamond']),
+  fontFamily: z.enum(['charter', 'inter', 'georgia', 'garamond', 'lato']),
   pageSize: z.enum(['a4', 'letter']),
   gutter: z.number(),
   margins: z.object({
@@ -58,7 +76,30 @@ const documentStyleSettingsSchema = z.object({
     bottom: z.number(),
     left: z.number(),
   }),
+  typography: documentTypographySchema,
 })
+
+const resumeSectionIdSchema = z.enum([
+  'summary',
+  'workExperience',
+  'selectedProjects',
+  'achievements',
+  'skills',
+  'tools',
+  'education',
+])
+
+const resumeSectionTitlesSchema = z
+  .object({
+    summary: z.string().optional(),
+    workExperience: z.string().optional(),
+    selectedProjects: z.string().optional(),
+    achievements: z.string().optional(),
+    skills: z.string().optional(),
+    tools: z.string().optional(),
+    education: z.string().optional(),
+  })
+  .optional()
 
 const resumeDataSchema = z.object({
   personal: z.object({
@@ -71,28 +112,9 @@ const resumeDataSchema = z.object({
   }),
   styleSettings: documentStyleSettingsSchema.optional(),
   summary: z.string(),
-  sectionOrder: z.array(
-    z.enum([
-      'summary',
-      'workExperience',
-      'selectedProjects',
-      'achievements',
-      'skills',
-      'tools',
-      'education',
-    ]),
-  ),
-  hiddenSections: z.array(
-    z.enum([
-      'summary',
-      'workExperience',
-      'selectedProjects',
-      'achievements',
-      'skills',
-      'tools',
-      'education',
-    ]),
-  ),
+  sectionOrder: z.array(resumeSectionIdSchema),
+  sectionTitles: resumeSectionTitlesSchema,
+  hiddenSections: z.array(resumeSectionIdSchema),
   workExperience: z.array(resumeEntrySchema),
   selectedProjects: z.array(resumeEntrySchema),
   achievements: z.array(resumeEntrySchema),
@@ -545,6 +567,7 @@ function buildDocumentHtml(
   const rightMargin = `${styleSettings.margins.right + gutterSplit}in`
   const bottomMargin = `${styleSettings.margins.bottom}in`
   const leftMargin = `${styleSettings.margins.left + gutterSplit}in`
+  const fontStylesheet = getDocumentFontStylesheet(styleSettings.fontFamily)
 
   return `<!DOCTYPE html>${renderToStaticMarkup(
     <html lang="en">
@@ -552,6 +575,9 @@ function buildDocumentHtml(
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title}</title>
+        {fontStylesheet ? (
+          <link rel="stylesheet" href={fontStylesheet} />
+        ) : null}
         <style>{`
           body {
             margin: 0;
